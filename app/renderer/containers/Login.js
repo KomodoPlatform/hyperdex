@@ -3,6 +3,7 @@ import {setWindowBounds} from 'electron-util';
 import ipc from 'electron-better-ipc';
 import {Container} from 'unstated';
 import LoginBox from 'views/LoginBox';
+import {sha256} from 'crypto-hash';
 import {minWindowSize} from '../../constants';
 import {isDevelopment} from '../../util-common';
 import Api from '../api';
@@ -38,28 +39,28 @@ const initApi = async seedPhrase => {
 
 	return new Api({
 		endpoint: url,
-		seedPhrase,
+		rpcPassword: await sha256(seedPhrase),
+		concurrency: 10,
 	});
 };
 
 const createApi = async seedPhrase => {
 	console.time('create-api');
 	const api = await initApi(seedPhrase);
-	await api.enableSocket();
+
 	appContainer.api = api;
 	if (isDevelopment) {
 		// Exposes the API for debugging in DevTools
 		// Example: `_api.debug({method: 'portfolio'})`
 		window._api = api;
 	}
+
 	console.timeEnd('create-api');
 	return api;
 };
 
 const enableCurrencies = async api => {
 	console.time('enable-currencies');
-	// ETOMIC needs to be enabled first otherwise ETH/ERC20 tokens will fail
-	await api.enableCurrency('ETOMIC');
 	await Promise.all(appContainer.state.enabledCoins.map(x => api.enableCurrency(x)));
 	console.timeEnd('enable-currencies');
 };
@@ -112,6 +113,10 @@ class LoginContainer extends Container {
 	}
 
 	async loadPortfolios() {
+		// We need to do this twice because of the migration of currencies from app config to portfolio.
+		// TODO: Remove this when the migration is removed.
+		await getPortfolios();
+
 		await this.setState({portfolios: await getPortfolios()});
 	}
 
@@ -138,11 +143,14 @@ class LoginContainer extends Container {
 		if (isDevelopment) {
 			window._swapDB = swapDB;
 		}
+
 		console.timeEnd('swap-db');
 
 		this.setActiveView('LoggingIn');
 
 		const api = await createApi(seedPhrase);
+
+		await appContainer.setEnabledCurrencies(portfolio.currencies);
 
 		await enableCurrencies(api);
 

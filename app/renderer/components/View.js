@@ -6,7 +6,7 @@ const View = ({component: Component, ...rest}) => (
 );
 
 View.propTypes = {
-	component: PropTypes.func,
+	component: PropTypes.elementType.isRequired,
 };
 
 export default View;

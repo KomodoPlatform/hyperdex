@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import appContainer from 'containers/App';
 import exchangeContainer from 'containers/Exchange';
 import tradesContainer from 'containers/Trades';
@@ -17,11 +18,15 @@ const TabView = ({component}) => (
 	<View component={component} activeView={exchangeContainer.state.activeSwapsView}/>
 );
 
+TabView.propTypes = {
+	component: PropTypes.elementType.isRequired,
+};
+
 const OpenOrders = () => {
 	const openOrders = getOpenOrders();
 
 	return (
-		<SwapList swaps={openOrders} showCancel/>
+		<SwapList showCancel swaps={openOrders}/>
 	);
 };
 
@@ -34,7 +39,7 @@ const CurrentPairOpenOrders = () => {
 	);
 
 	return (
-		<SwapList swaps={filteredData} showCancel/>
+		<SwapList showCancel swaps={filteredData}/>
 	);
 };
 

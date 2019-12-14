@@ -8,7 +8,7 @@ const AppView = ({component}) => (
 );
 
 AppView.propTypes = {
-	component: PropTypes.func,
+	component: PropTypes.elementType.isRequired,
 };
 
 export default AppView;

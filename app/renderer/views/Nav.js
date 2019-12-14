@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import appContainer from 'containers/App';
 import DashboardIcon from 'icons/Dashboard';
 /// import SwapIcon from 'icons/Swap';
@@ -15,13 +16,21 @@ const IconNavItem = ({icon: Icon, ...props}) => {
 	const title = props.to.toLowerCase();
 
 	return (
-		<div onClick={setView} className={`nav--button ${active ? 'active' : ''}`}>
+		<div
+			className={`nav--button ${active ? 'active' : ''}`}
+			onClick={setView}
+		>
 			<Icon className="icon"/>
 			<span className="title">
 				{t(title)}
 			</span>
 		</div>
 	);
+};
+
+IconNavItem.propTypes = {
+	icon: PropTypes.elementType.isRequired,
+	to: PropTypes.string.isRequired,
 };
 
 const Nav = () => (

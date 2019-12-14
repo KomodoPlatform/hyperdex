@@ -8,7 +8,7 @@ const LoginView = ({component}) => (
 );
 
 LoginView.propTypes = {
-	component: PropTypes.func,
+	component: PropTypes.elementType.isRequired,
 };
 
 export default LoginView;

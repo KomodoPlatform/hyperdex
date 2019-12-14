@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import roundTo from 'round-to';
 import _ from 'lodash';
 import SuperComponent from 'components/SuperComponent';
@@ -16,6 +17,11 @@ import './Order.scss';
 const t = translate('exchange');
 
 class Top extends React.Component {
+	static propTypes = {
+		type: PropTypes.string.isRequired,
+		getSelectedCurrency: PropTypes.func.isRequired,
+	};
+
 	handleSelectChange = selectedOption => {
 		if (this.props.type === 'buy') {
 			exchangeContainer.setBaseCurrency(selectedOption.value);
@@ -36,12 +42,13 @@ class Top extends React.Component {
 		return (
 			<div className="top">
 				<Select
+					searchable
 					className="currency-selector"
 					value={selectedCurrency.symbol}
 					options={selectData}
-					onChange={this.handleSelectChange}
 					valueRenderer={CurrencySelectOption}
 					optionRenderer={CurrencySelectOption}
+					onChange={this.handleSelectChange}
 				/>
 				<h3 className="balance">
 					{t('order.symbolBalance')}: <span>{roundTo(selectedCurrency.balance, 8)} {selectedCurrency.symbol}</span>
@@ -79,7 +86,6 @@ const Center = props => {
 					<thead>
 						<tr>
 							<th>{t('order.price', {symbol: state.quoteCurrency})}</th>
-							<th>{t('order.averageVolume')}</th>
 							<th>{t('order.maxVolume')}</th>
 						</tr>
 					</thead>
@@ -89,10 +95,10 @@ const Center = props => {
 							return props.getOrderBook().map((row, i) => (
 								<tr key={i} onClick={() => selectRow(row)}>
 									<td>{row.price}</td>
-									<td>{roundTo(row.averageVolume, 8)}</td>
 									<td>{roundTo(row.maxVolume, 8)}</td>
 								</tr>
 							));
+							/* eslint-enable react/no-array-index-key */
 						})()}
 					</tbody>
 				</table>
@@ -101,7 +107,24 @@ const Center = props => {
 	);
 };
 
+Center.propTypes = {
+	type: PropTypes.string.isRequired,
+	handlePriceChange: PropTypes.func.isRequired,
+	getOrderBook: PropTypes.func.isRequired,
+};
+
 class Bottom extends React.Component {
+	static propTypes = {
+		type: PropTypes.string.isRequired,
+		getOrderBook: PropTypes.func.isRequired,
+		handlePriceChange: PropTypes.func.isRequired,
+		handleTotalChange: PropTypes.func.isRequired,
+		handleAmountChange: PropTypes.func.isRequired,
+		price: PropTypes.string.isRequired,
+		amount: PropTypes.string.isRequired,
+		total: PropTypes.string.isRequired,
+	};
+
 	state = {
 		hasError: false,
 	};
@@ -115,17 +138,6 @@ class Bottom extends React.Component {
 		const {baseCurrency, quoteCurrency} = exchangeContainer.state;
 		const {price, amount, total, type} = this.props;
 
-		const requestOpts = {
-			type,
-			baseCurrency,
-			quoteCurrency,
-			price: Number(price),
-			amount: Number(amount),
-			total: Number(total),
-		};
-
-		const result = await api.order(requestOpts);
-
 		const orderError = error => {
 			// eslint-disable-next-line no-new
 			new Notification(t('order.failedTrade', {baseCurrency, type}), {body: error});
@@ -133,26 +145,30 @@ class Bottom extends React.Component {
 			this.setState({hasError: true});
 		};
 
-		// TODO: If we get this error we should probably show a more helpful error
-		// and grey out the order form for result.wait seconds.
-		// Or alternatively if we know there is a pending trade, prevent them from
-		// placing an order until it's matched.
-		if (result.error) {
-			let {error} = result;
-			if (error === 'only one pending request at a time') {
-				error = t('order.maxOnePendingSwap', {wait: result.wait});
-			}
+		const requestOpts = {
+			type,
+			baseCurrency,
+			quoteCurrency,
+			price: Number(price),
+			volume: Number(amount),
+		};
+
+		let swap;
+		try {
+			swap = await api.order(requestOpts);
+		} catch (error) {
+			console.log('a', error);
 			orderError(error);
 			return;
 		}
 
-		// TODO: Temp workaround for marketmaker issue
-		if (!result.pending) {
-			orderError(t('order.unexpectedError'));
-			return;
-		}
+		// This one is not needed by the mm v2 call, but we add it for the swap progress.
+		requestOpts.total = Number(total);
 
-		const swap = result.pending;
+		// We also rename back the property until we can refactor it all.
+		requestOpts.amount = requestOpts.volume;
+		delete requestOpts.volume;
+
 		const {swapDB} = appContainer;
 		await swapDB.insertSwapData(swap, requestOpts);
 		exchangeContainer.setIsSendingOrder(false);
@@ -199,17 +215,17 @@ class Bottom extends React.Component {
 		const TargetPriceButton = () => (
 			<CrosshairIcon
 				className="target-price-button"
-				onClick={this.targetPriceButtonHandler}
 				disabled={orderBook.length === 0}
 				size="13px"
+				onClick={this.targetPriceButtonHandler}
 			/>
 		);
 
 		const MaxPriceButton = () => (
 			<div
 				className="max-price-button"
-				onClick={this.maxPriceButtonHandler}
 				disabled={orderBook.length === 0}
+				onClick={this.maxPriceButtonHandler}
 			>
 				{t('order.maxPrice')}
 			</div>
@@ -224,13 +240,13 @@ class Bottom extends React.Component {
 					<div className="form-section">
 						<label>{t('order.price', {symbol: state.quoteCurrency})}</label>
 						<Input
-							className="price-input"
 							required
 							onlyNumeric
+							className="price-input"
 							fractionalDigits={8}
 							value={this.props.price}
-							onChange={this.props.handlePriceChange}
 							button={TargetPriceButton}
+							onChange={this.props.handlePriceChange}
 						/>
 					</div>
 					<div className="form-section">
@@ -240,8 +256,8 @@ class Bottom extends React.Component {
 							onlyNumeric
 							fractionalDigits={8}
 							value={this.props.amount}
-							onChange={this.props.handleAmountChange}
 							button={MaxPriceButton}
+							onChange={this.props.handleAmountChange}
 						/>
 					</div>
 					<div className="form-section total-section">
@@ -261,9 +277,9 @@ class Bottom extends React.Component {
 					</div>
 					<div className="form-section">
 						<Button
+							fullwidth
 							className={this.state.hasError ? 'shake-animation' : ''}
 							color={this.props.type === 'buy' ? 'green' : 'red'}
-							fullwidth
 							type="submit"
 							value={`${typeTitled} ${state.baseCurrency}`}
 							disabled={exchangeContainer.state.isSendingOrder}

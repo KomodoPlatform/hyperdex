@@ -2,27 +2,28 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {classNames} from 'react-extras';
-import CSSTransition from 'react-transition-group/CSSTransition';
 import {Manager, Popper, Reference, placements} from 'react-popper';
+import CSSTransition from 'react-transition-group/CSSTransition';
 import './Tooltip.scss';
 
 class Tooltip extends React.PureComponent {
 	static propTypes = {
+		children: PropTypes.node.isRequired,
+		content: PropTypes.node.isRequired,
 		animationDuration: PropTypes.number,
-		children: PropTypes.node,
-		content: PropTypes.node,
 		margin: PropTypes.oneOfType([
 			PropTypes.number,
 			PropTypes.string,
 		]),
-		onClose: PropTypes.func,
 		position: PropTypes.oneOf(placements),
+		onClose: PropTypes.func,
 	}
 
 	static defaultProps = {
 		animationDuration: 300,
 		margin: 0,
 		position: 'top',
+		onClose: undefined,
 	}
 
 	state = {
@@ -38,7 +39,15 @@ class Tooltip extends React.PureComponent {
 	}
 
 	render() {
-		const {animationDuration, children, content, margin, onClose, position} = this.props;
+		const {
+			children,
+			content,
+			animationDuration,
+			margin,
+			position,
+			onClose,
+		} = this.props;
+
 		const {isOpen} = this.state;
 
 		if (typeof this.updatePopper === 'function') {
@@ -53,9 +62,9 @@ class Tooltip extends React.PureComponent {
 					return (
 						<div ref={ref} className="Tooltip__container" style={style}>
 							<CSSTransition
+								mountOnEnter
 								classNames="Tooltip"
 								in={isOpen}
-								mountOnEnter
 								timeout={{
 									enter: 0, // Start animation immediately
 									exit: animationDuration,

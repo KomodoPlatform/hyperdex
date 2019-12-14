@@ -9,12 +9,14 @@ require('strict-import')(module, {
 	],
 });
 const electron = require('electron');
-const {autoUpdater} = require('electron-updater');
+/// const {autoUpdater} = require('electron-updater');
 const {is, disableZoom, setContentSecurityPolicy} = require('electron-util');
 const serve = require('electron-serve');
 const logger = require('electron-timber');
 const ipc = require('electron-better-ipc');
 const unhandled = require('electron-unhandled');
+const debug = require('electron-debug');
+const contextMenu = require('electron-context-menu');
 const appMenu = require('./menu');
 const config = require('./config');
 const marketmaker = require('./marketmaker');
@@ -29,11 +31,11 @@ unhandled({
 	},
 });
 
-require('electron-debug')({
-	enabled: isDevelopment,
+debug({
+	isEnabled: isDevelopment,
 });
 
-require('electron-context-menu')();
+contextMenu();
 
 try {
 	require('electron-reloader')(module, {watchRenderer: false});
@@ -43,25 +45,24 @@ const {app, session} = electron;
 
 app.setAppUserModelId('com.lukechilds.hyperdex');
 
-if (!is.development) {
-	autoUpdater.logger = logger.log;
-
-	autoUpdater.on('update-available', () => {
-		const notification = new electron.Notification({
-			title: `${app.getName()} Update Available!`,
-			body: 'Click to view the latest version.',
-		});
-
-		notification.on('click', () => {
-			electron.shell.openExternal('https://github.com/atomiclabs/hyperdex/releases/latest');
-		});
-
-		notification.show();
-	});
-
-	autoUpdater.autoDownload = false;
-	autoUpdater.checkForUpdates();
-}
+// TODO: Figure out why it throws at launch
+/// if (!is.development) {
+// 	autoUpdater.on('update-available', () => {
+// 		const notification = new electron.Notification({
+// 			title: `${app.getName()} Update Available!`,
+// 			body: 'Click to view the latest version.',
+// 		});
+//
+// 		notification.on('click', () => {
+// 			electron.shell.openExternal('https://github.com/atomiclabs/hyperdex/releases/latest');
+// 		});
+//
+// 		notification.show();
+// 	});
+//
+// 	autoUpdater.autoDownload = false;
+// 	autoUpdater.checkForUpdates();
+// }
 
 let mainWindow;
 
@@ -96,8 +97,12 @@ function createMainWindow() {
 		backgroundColor: '#1b232f', // Same as `--background-color`
 		darkTheme: config.get('theme') === 'dark', // GTK+3
 		webPreferences: {
-			webviewTag: false, // Disabled for security reasons since we don't use it
+			contextIsolation: false,
+			nodeIntegration: true,
 			enableBlinkFeatures: 'CSSBackdropFilter',
+
+			// TODO: Remove this when using Electron 5 as it will be the default value
+			webviewTag: false, // Disabled for security reasons since we don't use it
 		},
 	});
 
@@ -163,7 +168,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
 	if (rendererState.isLoggedIn) {
-		config.set('windowState', mainWindow.getBounds());
+		config.set('windowState', mainWindow.getNormalBounds());
 	}
 });
 

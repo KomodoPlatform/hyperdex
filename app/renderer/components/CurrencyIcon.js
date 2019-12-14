@@ -1,22 +1,20 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Image from './Image';
+import {Image} from 'react-extras';
 
 // TODO: Read this list from disk instead. Not a priority though.
 const hasCustomIcon = new Set([
-	'BEER',
 	'BOTS',
 	'CRYPTO',
 	'DEX',
 	'JUMBLR',
 	'KV',
 	'MSHARK',
+	'MYTH',
 	'PANGEA',
-	'PIZZA',
 	'REVS',
 	'SUPERNET',
 	'WLC',
-	'MYTH',
 ]);
 
 const CurrencyIcon = ({symbol, size, ...props}) => {
@@ -38,8 +36,12 @@ const CurrencyIcon = ({symbol, size, ...props}) => {
 };
 
 CurrencyIcon.propTypes = {
-	symbol: PropTypes.string,
+	symbol: PropTypes.string.isRequired,
 	size: PropTypes.string,
+};
+
+CurrencyIcon.defaultProps = {
+	size: undefined,
 };
 
 export default CurrencyIcon;

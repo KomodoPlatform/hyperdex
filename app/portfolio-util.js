@@ -3,19 +3,21 @@ const path = require('path');
 const {app} = require('electron');
 const slugify = require('@sindresorhus/slugify');
 const randomString = require('crypto-random-string');
-const writeJsonFile = require('write-json-file');
 const dir = require('node-dir');
 const loadJsonFile = require('load-json-file');
+const writeJsonFile = require('write-json-file');
 const del = require('del');
 const {encrypt, decrypt} = require('./encryption');
 const {translate} = require('./locale');
+const config = require('./config');
+const {defaultEnabledCurrencies} = require('./constants');
 
-const portfolioPath = path.join(app.getPath('userData'), 'portfolios');
 const t = translate('login');
-
+const portfoliosDirectoryPath = path.join(app.getPath('userData'), 'portfolios');
 const idToFileName = id => `hyperdex-portfolio-${id}.json`;
 const fileNameToId = fileName => fileName.replace(/^hyperdex-portfolio-/, '').replace(/\.json$/, '');
-const generateId = name => `${slugify(name).slice(0, 40)}-${randomString(6)}`;
+const idToFilePath = id => path.join(portfoliosDirectoryPath, idToFileName(id));
+const generateId = name => `${slugify(name).slice(0, 40)}-${randomString({length: 6})}`;
 
 class IncorrectPasswordError extends Error {
 	constructor() {
@@ -24,14 +26,52 @@ class IncorrectPasswordError extends Error {
 	}
 }
 
+// Currencies that are removed from the app and should be removed from the user's portfolio
+const removedCurrencies = [
+	'DNR',
+	'BCBC',
+	'QMC',
+	'MNZ',
+	'GBX',
+	'XMCC',
+	'POLIS',
+	'PGT',
+	'CC',
+	'THETA',
+	'MAN',
+	'CMT',
+	'NULS',
+	'ICX',
+	'AION',
+	'VEN',
+	'EOS',
+	'BTCZ',
+	'ZCL',
+	'BTCP',
+	'BTX',
+	'CRW',
+	'EQLI',
+	'GLXT',
+	'RAP',
+	'STAK',
+	'VIA',
+	'XSG',
+	'BEER',
+	'PIZZA',
+	'BLK',
+	'FAIR',
+	'SIB',
+];
+
 const createPortfolio = async ({name, seedPhrase, password}) => {
 	const id = generateId(name);
-	const filePath = path.join(portfolioPath, idToFileName(id));
+	const filePath = idToFilePath(id);
 
 	const portfolio = {
 		name,
 		encryptedSeedPhrase: await encrypt(seedPhrase, password),
 		appVersion: app.getVersion(),
+		currencies: defaultEnabledCurrencies,
 	};
 
 	await writeJsonFile(filePath, portfolio);
@@ -40,30 +80,56 @@ const createPortfolio = async ({name, seedPhrase, password}) => {
 };
 
 const deletePortfolio = async id => {
-	const filePath = path.join(portfolioPath, idToFileName(id));
+	const filePath = idToFilePath(id);
 	await del(filePath, {force: true});
 };
 
-const renamePortfolio = async ({id, newName}) => {
-	const filePath = path.join(portfolioPath, idToFileName(id));
+const modifyPortfolio = async (id, modifyCallback) => {
+	const filePath = idToFilePath(id);
 	const portfolio = await loadJsonFile(filePath);
-
-	portfolio.name = newName;
-
+	await modifyCallback(portfolio);
 	await writeJsonFile(filePath, portfolio);
 };
 
+const renamePortfolio = async ({id, newName}) => {
+	await modifyPortfolio(id, portfolio => {
+		portfolio.name = newName;
+	});
+};
+
 const changePortfolioPassword = async ({id, seedPhrase, newPassword}) => {
-	const filePath = path.join(portfolioPath, idToFileName(id));
-	const portfolio = await loadJsonFile(filePath);
-	portfolio.encryptedSeedPhrase = await encrypt(seedPhrase, newPassword);
-	await writeJsonFile(filePath, portfolio);
+	await modifyPortfolio(id, async portfolio => {
+		portfolio.encryptedSeedPhrase = await encrypt(seedPhrase, newPassword);
+	});
+};
+
+const _enabledCoins = config.get('enabledCoins');
+config.delete('enabledCoins');
+const migrateEnabledCurrencies = async id => {
+	await modifyPortfolio(id, portfolio => {
+		if (portfolio.currencies) {
+			return;
+		}
+
+		if (!Array.isArray(_enabledCoins)) {
+			portfolio.currencies = [];
+			return;
+		}
+
+		portfolio.currencies = _enabledCoins;
+	});
+};
+
+const removeCurrenciesMigration = async id => {
+	await modifyPortfolio(id, portfolio => {
+		portfolio.currencies = portfolio.currencies.filter(currency => !removedCurrencies.includes(currency));
+	});
 };
 
 const getPortfolios = async () => {
 	let portfolioFiles;
 	try {
-		portfolioFiles = await dir.promiseFiles(portfolioPath);
+		portfolioFiles = await dir.promiseFiles(portfoliosDirectoryPath);
 	} catch (error) {
 		if (error.code === 'ENOENT') {
 			return [];
@@ -72,12 +138,17 @@ const getPortfolios = async () => {
 		throw error;
 	}
 
-	portfolioFiles = portfolioFiles.filter(x => x.endsWith('.json'));
+	portfolioFiles = portfolioFiles.filter(file => file.endsWith('.json'));
 
 	const portfolios = await Promise.all(portfolioFiles.map(async filePath => {
 		const portfolio = await loadJsonFile(filePath);
 		portfolio.fileName = path.basename(filePath);
 		portfolio.id = fileNameToId(portfolio.fileName);
+
+		// TODO: Remove this sometime far in the future when everyone has migrated
+		await migrateEnabledCurrencies(portfolio.id);
+
+		await removeCurrenciesMigration(portfolio.id);
 
 		return portfolio;
 	}));
@@ -97,6 +168,12 @@ const decryptSeedPhrase = async (seedPhrase, password) => {
 	}
 };
 
+const setCurrencies = async (id, currencies) => {
+	await modifyPortfolio(id, portfolio => {
+		portfolio.currencies = currencies;
+	});
+};
+
 module.exports = {
 	createPortfolio,
 	deletePortfolio,
@@ -104,4 +181,7 @@ module.exports = {
 	changePortfolioPassword,
 	getPortfolios,
 	decryptSeedPhrase,
+	setCurrencies,
+	portfoliosDirectoryPath,
+	getPortfolioFilePath: idToFilePath,
 };

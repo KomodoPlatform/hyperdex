@@ -20,7 +20,7 @@
 	<a title="Keybase" target="_blank" href="https://keybase.io/hyperdex">
 		<img src="https://badgen.net/keybase/pgp/hyperdex">
 	</a>
-	<a href="Follow on Twitter" href="https://twitter.com/HyperDEXApp">
+	<a title="Follow on Twitter" target="_blank" href="https://twitter.com/HyperDEXApp">
 		<img src="https://img.shields.io/twitter/follow/HyperDexApp.svg?style=social&label=Follow">
 	</a>
 	<br>
@@ -36,7 +36,7 @@ Built on the Komodo Platform's <a href="https://barterdex.supernet.org">BarterDE
 
 ### This software is currently in beta
 
-There is a risk of loss of funds. Only trade in real currency if you can take that risk. We recommend trading the test currencies `BEER` and `PIZZA` instead. You can get free `BEER` at the `BEER` [faucet](https://www.atomicexplorer.com/#/faucet).
+There is a risk of loss of funds. Only trade in real currency if you can take that risk. We recommend trading the test currencies `RICK` and `MORTY` instead. You can get free `RICK` [here](https://www.atomicexplorer.com/#/faucet/rick) and free `MORTY` [here](https://www.atomicexplorer.com/#/faucet/morty).
 
 
 ### HyperDEX is just a GUI
@@ -73,7 +73,7 @@ We are planning to add an option to specify the number of confirmations your are
 
 ## Install
 
-*macOS 10.9+, Linux, and Windows 7+ are supported (64-bit only).*
+*macOS 10.10+, Linux, and Windows 7+ are supported (64-bit only).*
 
 ### macOS
 
@@ -107,7 +107,3 @@ HyperDEX is a free and open source project. You can help support its development
 | ------- | ----------------------------------- |
 | **BTC** | `1HyperDEXfMx459ZFh6Ram5uymS8AiRAQf`|
 | **KMD** | `RHyper8TJyHK6uZ3AXzUwC2uVRdt7cfxEC`|
-
-## License
-
-MIT

@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import {Subscribe} from 'unstated';
 import {withState} from 'containers/SuperContainer';
 import appContainer from 'containers/App';
@@ -19,10 +20,14 @@ const TabView = ({component}) => (
 	<View component={component} activeView={tradesContainer.state.activeView}/>
 );
 
+TabView.propTypes = {
+	component: PropTypes.elementType.isRequired,
+};
+
 const OpenOrders = () => {
 	const {state} = appContainer;
 	const filteredData = state.swapHistory.filter(swap => swap.isActive);
-	return <SwapList swaps={filteredData} showCancel showHeader/>;
+	return <SwapList showCancel showHeader swaps={filteredData}/>;
 };
 
 const TradeHistory = () => {
@@ -31,7 +36,7 @@ const TradeHistory = () => {
 
 	return (
 		<SwapFilters swaps={filteredData}>
-			{swaps => <SwapList swaps={swaps} showCancel showHeader/>}
+			{swaps => <SwapList showCancel showHeader swaps={swaps}/>}
 		</SwapFilters>
 	);
 };
@@ -80,6 +85,10 @@ const Trades = props => (
 		}}
 	</Subscribe>
 );
+
+Trades.propTypes = {
+	state: PropTypes.object.isRequired,
+};
 
 export default withState(Trades, {}, {
 	async componentDidMount() {

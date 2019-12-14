@@ -41,7 +41,7 @@ class CurrencySetting extends React.Component {
 	}
 
 	render() {
-		const excludedCurrencies = isDevelopment ? [] : ['PIZZA', 'BEER'];
+		const excludedCurrencies = isDevelopment ? [] : ['RICK', 'MORTY'];
 		const currencySymbols = _.without(getCurrencySymbols(), ...excludedCurrencies);
 		const {isUpdatingCurrencies} = settingsContainer.state;
 
@@ -58,15 +58,15 @@ class CurrencySetting extends React.Component {
 				</label>
 				<Select
 					ref={this.selectRef}
-					className="enabled-currencies"
 					multi
 					searchable
+					className="enabled-currencies"
 					value={appContainer.state.enabledCoins}
 					options={selectData}
-					onChange={this.handleSelectChange}
 					valueRenderer={CurrencySelectOption}
 					optionRenderer={CurrencySelectOption}
 					openOnFocus={isUpdatingCurrencies}
+					onChange={this.handleSelectChange}
 					onOpen={() => {
 						// TODO: This is ugly, but not worth doing better since
 						// React Select v2 will soon be out and will be completely different.

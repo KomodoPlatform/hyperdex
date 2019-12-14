@@ -21,29 +21,51 @@ const isExponentialNotation = value => /(\d+\.?\d*)e\d*(\+|-)(\d+)/.test(value);
 
 class Input extends React.Component {
 	static propTypes = {
-		button: PropTypes.func,
-		className: PropTypes.string,
-		disabled: PropTypes.bool,
-		errorMessage: PropTypes.string,
 		forwardedRef: PropTypes.oneOfType([
-			PropTypes.func,
+			PropTypes.elementType,
 			PropTypes.object,
 		]),
-		fractionalDigits: propTypesRange(0, 20),
-		icon: PropTypes.string,
-		iconName: PropTypes.string,
-		iconSize: PropTypes.number,
-		level: PropTypes.string,
-		message: PropTypes.string,
-		onChange: PropTypes.func,
-		onlyNumeric: PropTypes.bool,
-		readOnly: PropTypes.bool,
+		className: PropTypes.string,
 		type: PropTypes.string,
-		view: PropTypes.func,
+		level: PropTypes.string,
+		icon: PropTypes.string,
+		iconSize: PropTypes.number,
+		iconName: PropTypes.string,
+		message: PropTypes.string,
+		errorMessage: PropTypes.string,
+		disabled: PropTypes.bool,
+		readOnly: PropTypes.bool,
+		onlyNumeric: PropTypes.bool,
+		fractionalDigits: propTypesRange(0, 20),
+		view: PropTypes.elementType,
+		button: PropTypes.elementType,
+		onChange: PropTypes.func,
+		value: PropTypes.string,
+		pattern: PropTypes.oneOfType([
+			PropTypes.string,
+			PropTypes.func,
+		]),
 	}
 
 	static defaultProps = {
+		forwardedRef: undefined,
+		className: '',
 		type: 'text',
+		level: undefined,
+		icon: undefined,
+		iconSize: undefined,
+		iconName: undefined,
+		message: undefined,
+		errorMessage: undefined,
+		disabled: false,
+		readOnly: false,
+		onlyNumeric: false,
+		fractionalDigits: undefined,
+		view: undefined,
+		button: undefined,
+		onChange: undefined,
+		value: '',
+		pattern: undefined,
 	}
 
 	static getDerivedStateFromProps(props, state) {
@@ -68,7 +90,7 @@ class Input extends React.Component {
 
 	state = {
 		level: this.props.level,
-		value: this.props.value || '',
+		value: this.props.value,
 	};
 
 	handleChange = event => {
@@ -138,20 +160,20 @@ class Input extends React.Component {
 		let {
 			forwardedRef,
 			className,
-			message,
-			errorMessage,
-			disabled,
-			readOnly,
-			onChange,
-			onlyNumeric,
-			fractionalDigits,
 			type,
 			icon,
 			iconSize,
 			iconName,
+			message,
+			errorMessage,
+			disabled,
+			readOnly,
+			onlyNumeric,
+			fractionalDigits,
 			pattern,
 			view: View,
 			button: Button,
+			onChange,
 			...props
 		} = this.props;
 		let {level} = this.state;
